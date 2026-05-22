@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+samples/_test_*
+samples/*_v[0-9].png
+samples/*_clean.png
+data/
+*.db
+*.db-journal
+.DS_Store

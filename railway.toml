@@ -1,0 +1,7 @@
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+startCommand = "python -m src.bot"
+restartPolicyType = "ALWAYS"
+restartPolicyMaxRetries = 10
