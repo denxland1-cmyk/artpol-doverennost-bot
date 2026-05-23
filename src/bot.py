@@ -23,6 +23,7 @@ from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
     ContextTypes, filters,
 )
+from telegram.request import HTTPXRequest
 
 from . import db, suppliers
 from .email_sender import send as send_email, build_subject, build_body, build_attachment_name
@@ -33,6 +34,9 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     level=logging.INFO,
 )
+# httpx логирует полный URL Telegram API, а в URL — токен. Глушим до WARNING.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 log = logging.getLogger("doverennost-bot")
 
 ADMIN_TG_ID = int(os.environ.get("ADMIN_TG_ID", "0"))
@@ -331,7 +335,9 @@ def main() -> None:
     token = os.environ["TG_TOKEN"]
     db.init()
 
-    app = Application.builder().token(token).build()
+    # Расширенные таймауты: при медленном канале PDF 1-7 MB иначе не успевает
+    request = HTTPXRequest(connect_timeout=20, read_timeout=60, write_timeout=120, pool_timeout=20)
+    app = Application.builder().token(token).request(request).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("history", cmd_history))
     app.add_handler(CommandHandler("whoami", cmd_whoami))

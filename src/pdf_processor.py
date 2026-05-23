@@ -177,7 +177,8 @@ def stamp(src_path: str | Path, dst_path: str | Path) -> None:
         overlay=True,
     )
 
-    doc.save(str(dst_path))
+    # Компрессия: garbage сборка, deflate-сжатие потоков, чистка
+    doc.save(str(dst_path), garbage=4, deflate=True, clean=True)
     doc.close()
 
 
