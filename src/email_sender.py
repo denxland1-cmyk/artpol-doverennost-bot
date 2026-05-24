@@ -12,7 +12,7 @@ from .pdf_processor import DoverennostData
 from .suppliers import Supplier
 
 SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 465  # SSL
+SMTP_PORT = 587  # STARTTLS (на cloud-провайдерах чаще проходит чем 465/SSL)
 
 
 def _today_msk() -> str:
@@ -83,7 +83,11 @@ def send(
             filename=attach_name,
         )
 
-    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+    # Gmail App Password может быть с пробелами ("xxxx yyyy zzzz wwww") —
+    # SMTP требует без; strip пробелов на всякий случай.
+    gmail_password = gmail_password.replace(" ", "")
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+        smtp.starttls()
         smtp.login(gmail_user, gmail_password)
         smtp.send_message(msg)
 
