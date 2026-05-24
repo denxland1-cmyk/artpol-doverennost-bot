@@ -30,7 +30,7 @@ PECHAT_DIAMETER_MM = 40.0
 PECHAT_OFFSET_LEFT_MM = 10.0
 PODPIS_WIDTH_PT = 105.0
 PODPIS_HEIGHT_PT = 38.0
-PODPIS_GAP_FROM_RUKOVODITEL_PT = 15.0
+PODPIS_GAP_FROM_LABEL_PT = 15.0  # отступ подписи от слова «Руководитель» / «Главный бухгалтер»
 
 
 @dataclass
@@ -145,6 +145,7 @@ def stamp(src_path: str | Path, dst_path: str | Path) -> None:
 
     mp_rects = page.search_for("М. П.")
     ruk_rects = page.search_for("Руководитель")
+    gb_rects = page.search_for("Главный бухгалтер")
     if not mp_rects or not ruk_rects:
         raise ValueError("Якоря М.П./Руководитель не найдены на странице с подписями")
 
@@ -165,21 +166,29 @@ def stamp(src_path: str | Path, dst_path: str | Path) -> None:
         overlay=True,
     )
 
-    # === Подпись ===
-    # Нижний край подписи — на линии подписи (= низ слова «Руководитель» + 1pt)
-    ruk_line_y = ruk.y1 + 1
-    px = ruk.x1 + PODPIS_GAP_FROM_RUKOVODITEL_PT
-    py = ruk_line_y - PODPIS_HEIGHT_PT
+    # === Подпись Руководителя ===
+    _stamp_signature(page, ruk)
+
+    # === Подпись Главного бухгалтера (та же PNG) ===
+    if gb_rects:
+        _stamp_signature(page, gb_rects[0])
+
+    # Компрессия: garbage сборка, deflate-сжатие потоков, чистка
+    doc.save(str(dst_path), garbage=4, deflate=True, clean=True)
+    doc.close()
+
+
+def _stamp_signature(page, label_rect: fitz.Rect) -> None:
+    """Накладывает подпись над линией справа от слова-якоря (Руководитель/Гл.бух)."""
+    line_y = label_rect.y1 + 1
+    px = label_rect.x1 + PODPIS_GAP_FROM_LABEL_PT
+    py = line_y - PODPIS_HEIGHT_PT
     page.insert_image(
         fitz.Rect(px, py, px + PODPIS_WIDTH_PT, py + PODPIS_HEIGHT_PT),
         filename=PODPIS_PATH,
         keep_proportion=True,
         overlay=True,
     )
-
-    # Компрессия: garbage сборка, deflate-сжатие потоков, чистка
-    doc.save(str(dst_path), garbage=4, deflate=True, clean=True)
-    doc.close()
 
 
 def _find_signature_page_fitz(doc):
