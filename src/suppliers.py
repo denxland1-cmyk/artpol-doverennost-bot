@@ -18,7 +18,7 @@ class Supplier:
 
 # Все 8 поставщиков
 SUPPLIERS = {
-    "stroykommerz":  Supplier("stroykommerz",  'ООО "СтройКоммерц"',   "denxland1@gmail.com",      "5261080507", "цемент"),  # TEST: подменено для боевой проверки SMTP, вернуть на stroykommerz@yandex.ru
+    "stroykommerz":  Supplier("stroykommerz",  'ООО "СтройКоммерц"',   "stroykommerz@yandex.ru",   "5261080507", "цемент"),
     "ledystroy":     Supplier("ledystroy",     'ООО "Леди Строй"',     "ledystroy@ledystroy.ru",   "5245004555", "цемент"),
     "goth":          Supplier("goth",          'ООО "ГОТХ"',           "terminal-td@yandex.ru",    "5256003955", "песок"),
     "optstroy":      Supplier("optstroy",      'ООО "Опт Строй НН"',   "k-s-nn@yandex.ru",         "5259121442", "керамзит"),
