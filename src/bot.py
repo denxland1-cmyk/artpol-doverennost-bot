@@ -130,6 +130,28 @@ async def cmd_history(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("\n".join(lines))
 
 
+async def cmd_stats(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    """Админ-команда: уникальные пользователи + breakdown по действиям."""
+    if update.effective_user.id != ADMIN_TG_ID:
+        return
+    users = db.user_stats()
+    if not users:
+        await update.message.reply_text("Никто ещё не пользовался ботом.")
+        return
+    lines = [f"👥 Всего уникальных пользователей: <b>{len(users)}</b>\n"]
+    for u in users:
+        uname = u["tg_username"] or "—"
+        lines.append(
+            f"<b>{uname}</b> (id <code>{u['tg_user_id']}</code>)\n"
+            f"  📅 {u['first_seen'][:16]} → {u['last_seen'][:16]}\n"
+            f"  📄 PDF: {u['pdfs']}  ▶️ выбрал: {u['clicks']}  "
+            f"✅ отправлено: {u['sent_ok']}  ✖️ отмена: {u['cancels']}\n"
+            f"  ⚠️ парс-fail: {u['parse_fails']}  печать-fail: {u['stamp_fails']}  "
+            f"SMTP-fail: {u['fails']}"
+        )
+    await update.message.reply_text("\n\n".join(lines), parse_mode=ParseMode.HTML)
+
+
 async def cmd_whoami(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     u = update.effective_user
     await update.message.reply_text(
@@ -340,6 +362,7 @@ def main() -> None:
     app = Application.builder().token(token).request(request).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("history", cmd_history))
+    app.add_handler(CommandHandler("stats", cmd_stats))
     app.add_handler(CommandHandler("whoami", cmd_whoami))
     app.add_handler(MessageHandler(filters.Document.PDF, on_document))
     app.add_handler(CallbackQueryHandler(on_supplier, pattern=f"^{CB_SUPPLIER}"))

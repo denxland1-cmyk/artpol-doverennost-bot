@@ -101,3 +101,42 @@ def recent_sent(limit: int = 20) -> list[dict[str, Any]]:
         )
         cols = [d[0] for d in cur.description]
         return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+def user_stats() -> list[dict[str, Any]]:
+    """Для /stats: уникальные пользователи + breakdown по действиям.
+
+    Собирает данные из обеих таблиц (sent + attempts).
+    """
+    with _conn() as c:
+        cur = c.execute(
+            """
+            SELECT
+                u.tg_user_id,
+                MAX(u.tg_username)                                   AS tg_username,
+                MIN(u.first_seen)                                    AS first_seen,
+                MAX(u.last_seen)                                     AS last_seen,
+                SUM(CASE WHEN u.action = 'pdf_received'    THEN 1 ELSE 0 END) AS pdfs,
+                SUM(CASE WHEN u.action = 'supplier_chosen' THEN 1 ELSE 0 END) AS clicks,
+                SUM(CASE WHEN u.action = 'cancelled'       THEN 1 ELSE 0 END) AS cancels,
+                SUM(CASE WHEN u.action = 'send_fail'       THEN 1 ELSE 0 END) AS fails,
+                SUM(CASE WHEN u.action = 'parse_fail'      THEN 1 ELSE 0 END) AS parse_fails,
+                SUM(CASE WHEN u.action = 'stamp_fail'      THEN 1 ELSE 0 END) AS stamp_fails
+            FROM (
+                SELECT tg_user_id, tg_username, action, ts AS first_seen, ts AS last_seen
+                FROM attempts
+            ) u
+            GROUP BY u.tg_user_id
+            ORDER BY MAX(u.last_seen) DESC
+            """
+        )
+        cols = [d[0] for d in cur.description]
+        users = [dict(zip(cols, row)) for row in cur.fetchall()]
+
+        # Добавим количество УСПЕШНЫХ отправок (из sent) к каждому пользователю
+        cur = c.execute("SELECT tg_user_id, COUNT(*) AS sent_ok FROM sent GROUP BY tg_user_id")
+        sent_by_user = {row[0]: row[1] for row in cur.fetchall()}
+        for u in users:
+            u["sent_ok"] = sent_by_user.get(u["tg_user_id"], 0)
+
+        return users
