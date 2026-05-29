@@ -83,7 +83,7 @@ def _format_summary(data: DoverennostData, supplier: suppliers.Supplier) -> str:
     return (
         f"📧 <b>Поставщик:</b> {supplier.name}\n"
         f"📨 <b>Email:</b> <code>{supplier.email}</code>\n"
-        f"📝 <b>Тема:</b> {build_subject()}\n\n"
+        f"📝 <b>Тема:</b> {build_subject(data)}\n\n"
         f"<b>Текст письма:</b>\n"
         f"<code>{main_line}</code>\n\n"
         f"📎 <b>Вложение:</b> <code>{build_attachment_name(data)}</code>\n\n"

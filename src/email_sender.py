@@ -20,8 +20,11 @@ def _today_msk() -> str:
     return datetime.now(ZoneInfo("Europe/Moscow")).strftime("%d.%m.%Y")
 
 
-def build_subject() -> str:
-    return f'Заявка АРТПОЛ на {_today_msk()}'
+def build_subject(data: DoverennostData) -> str:
+    # Дата в теме = дата доверенности (когда забирают материал), НЕ дата отправки.
+    # Fallback на сегодня, если дату из PDF распарсить не удалось.
+    date = data.date_str or _today_msk()
+    return f'Заявка АРТПОЛ на {date}'
 
 
 def build_body(data: DoverennostData, signature_name: str, signature_phone: str) -> str:
@@ -65,7 +68,7 @@ def send(
     signature_name = signature_name or os.environ.get("SIGNATURE_NAME", "Менеджер")
     signature_phone = signature_phone or os.environ.get("SIGNATURE_PHONE", "")
 
-    subject = build_subject()
+    subject = build_subject(data)
     body = build_body(data, signature_name, signature_phone)
     attach_name = build_attachment_name(data)
 
