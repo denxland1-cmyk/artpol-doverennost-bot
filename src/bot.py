@@ -19,6 +19,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
+from telegram.error import NetworkError, TimedOut
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
     ContextTypes, filters,
@@ -346,8 +347,15 @@ def _cleanup(session: dict, context: ContextTypes.DEFAULT_TYPE, pdf_id: str) -> 
 
 
 async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    log.error("Exception:", exc_info=context.error)
-    tb = "".join(traceback.format_exception(type(context.error), context.error, context.error.__traceback__))
+    err = context.error
+    # Transient network ошибки (Telegram закрывает long-poll, временные ReadError'ы
+    # на медленном канале) — PTB ретраит сам. Логируем, но НЕ спамим админу.
+    if isinstance(err, (NetworkError, TimedOut)):
+        log.warning("Transient network error (PTB retries auto): %s: %s",
+                    type(err).__name__, err)
+        return
+    log.error("Exception:", exc_info=err)
+    tb = "".join(traceback.format_exception(type(err), err, err.__traceback__))
     await _notify_admin(context, f"❗️ Bot exception:\n<pre>{tb[-2000:]}</pre>")
 
 
